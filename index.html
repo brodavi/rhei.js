@@ -1,0 +1,73 @@
+<DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+
+    <div class="box">
+      <h1>TODOS</h1>
+    </div>
+
+    <ul id="todos" class="box"></ul>
+
+    <div class="box">
+      <input id="searchString" type="text">
+      <button onclick="runSearch()">SEARCH TODOS</button>
+      <button onclick="runGetAll()">ALL TODOS</button>
+    </div>
+
+    <div class="box">
+      <input id="filterString" type="text">
+      <button onclick="runFilter()">FILTER TODOS</button>
+      <input type="checkbox" onclick="runFilterDone(this)"> ONLY DONE
+    </div>
+
+    <div class="box">
+      <input id="newTodoText" type="text">
+      <button onclick="runAdd()">ADD TODO</button>
+    </div>
+
+    <div id="testError" class="box">
+      <button onclick="testError()">TEST ERROR</button>
+    </div>
+
+    <script type="text/javascript" src="rhei.js"></script>
+    <script type="text/javascript" src="components.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+  </body>
+</html>
+
+<style>
+  body {
+    font-family: sans-serif;
+  }
+
+  .box {
+    border: 2px solid black;
+    border-radius: 6px;
+
+    width: 300px;
+
+    padding: 10px;
+    margin: 10px;
+  }
+
+  .task {
+    font-weight: bold;
+    color: #334455;
+  }
+
+  .status {
+    font-size: 9px;
+    color: #223344;
+
+    margin: 15px;
+  }
+
+  .remove {
+    font-weight: bold;
+    color: #772222;
+    cursor: pointer;
+  }
+</style>
