@@ -23,10 +23,9 @@ FBP.component({
       coll.data.push(el.data);
     }
 
-    FBP.dropIP(el);
-    FBP.dropIP(idx);
+    FBP.dropIP([el, idx]);
 
-    output(coll);
+    output.push(coll);
   }
 });
 
@@ -50,12 +49,41 @@ FBP.component({
 
     var idx = coll.data.indexOf(el);
 
-    FBP.dropIP(coll);
-    FBP.dropIP(key);
-    FBP.dropIP(value);
+    FBP.dropIP([coll, key, value]);
 
-    output(FBP.createIP(el));
-    outputIdx(FBP.createIP(idx));
+    output.push(FBP.createIP(el));
+    outputIdx.push(FBP.createIP(idx));
+  }
+});
+
+/**
+ * Drop every IP you get
+ * @param {ip} anything - Anything
+ */
+
+FBP.component({
+  name: 'null',
+  inPorts: ['input'],
+  // no outPorts! this is a sink node
+  body: function find (input) {
+    FBP.dropIP(input);
+  }
+});
+
+/**
+ * Console Log
+ * @param {ip} data - The thing to log
+ * @param {ip} preamble - The thing to log before the thing to log
+ */
+
+FBP.component({
+  name: 'consoleLog',
+  inPorts: ['preamble', 'data'],
+  // no outPorts! this is a sink node.
+  body: function consoleLog (preamble, data) {
+    console.log(preamble.data);
+    console.log(data.data);
+    FBP.dropIP([preamble, data]);
   }
 });
 
@@ -74,10 +102,9 @@ FBP.component({
     var newTodo = req.data.body;
     newTodo.id = currentID.data;
 
-    FBP.dropIP(currentID);
-    FBP.dropIP(req);
+    FBP.dropIP([currentID, req]);
 
-    output(FBP.createIP(newTodo));
+    output.push(FBP.createIP(newTodo));
   }
 });
 
@@ -103,7 +130,7 @@ FBP.component({
 
     FBP.dropIP(req);
 
-    output(obj);
+    output.push(obj);
   }
 });
 
@@ -121,7 +148,7 @@ FBP.component({
     coll.data.splice([coll.data.indexOf(el.data)], 1);
 
     FBP.dropIP(el);
-    output(coll);
+    output.push(coll);
   }
 });
 
@@ -149,10 +176,9 @@ FBP.component({
 
     // we just manipulate the list of things that came to us.
     // no more need for the filter string or key.
-    FBP.dropIP(filterString);
-    FBP.dropIP(key);
+    FBP.dropIP([filterString, key]);
 
-    output(coll);
+    output.push(coll);
   }
 });
 
@@ -164,16 +190,62 @@ FBP.component({
 FBP.component({
   name: 'sendResponse',
   inPorts: ['data', 'res'],
-  outPorts: ['output'],
-  body: function sendResponse (data, res, output) {
+  // no outPorts! this is a sink node
+  body: function sendResponse (data, res) {
 
     // Side effect!
     console.log('sent response: ', data.data);
-    res.data.json(data.data);
 
-    FBP.dropIP(res);
+    if (typeof data.data == 'object') {
+      res.data.json(data.data);
+    } else {
+      res.data.end(data.data);
+    }
 
-    output(data.data);
+    FBP.dropIP([data, res]);
+  }
+});
+
+/**
+ * Generic node.js http request component
+ * @param {ip} http - The node http library
+ * @param {ip} hostname - The server
+ * @param {ip} path - The request path
+ * @param {ip} method - The method
+ * @param {ip} headers - The request headers
+ * @param {ip} data - Optional data (if sending)
+ * @param {port} output - The output port callback
+ * @param {port} outputErr - The output erro port callback
+ */
+FBP.component({
+  name: 'serverRequest',
+  inPorts: ['http', 'hostname', 'path', 'method', 'headers', 'data'],
+  outPorts: ['output', 'outputErr'],
+  body: function request (http, hostname, path, method, headers, data, output, outputErr) {
+    var req = http.data.request({
+      hostname: hostname.data,
+      path: path.data,
+      method: method.data,
+      headers: headers,data
+    }, function (res) {
+      var body = '';
+      res.setEncoding('utf8');
+      res.on('data', function (chunk) {
+        body += chunk;
+      });
+      res.on('end', function() {
+        output.push(FBP.createIP(body));
+        FBP.dropIP([http, hostname, path, method, headers, data]);
+      });
+    }).on('error', function (e) {
+      outputErr.push(FBP.createIP(e));
+      FBP.dropIP([http, hostname, path, method, headers, data]);
+    });
+
+    if (data.data) {
+      req.write(data);
+    }
+    req.end();
   }
 });
 
@@ -205,22 +277,19 @@ FBP.component({
         var response = JSON.parse(request.responseText);
 
         // output the new thing from the server
-        output(FBP.createIP(response));
+        output.push(FBP.createIP(response));
       } else {
-        // output a url to visit (this contrived thing is for the article)
-        outputErr(FBP.createIP('http://localhost:3030/explain'));
+        outputErr.push(FBP.createIP(request.responseText));
       }
     };
 
     request.onerror = function () {
-      output(FBP.createIP('error'));
+      output.push(FBP.createIP('error'));
     };
 
     // no matter what else happens, success or error, the incoming things
     // no longer have meaning. get rid of them.
-    FBP.dropIP(url);
-    FBP.dropIP(method);
-    FBP.dropIP(data);
+    FBP.dropIP([url, method, data]);
 
     if (data) {
       request.send(JSON.stringify(d));
@@ -275,7 +344,7 @@ FBP.component({
     // now it is a collection of DOM elements. still a list of todos, but
     // in different form. we pass it along the conveyer belt.
     todos.data = list;
-    output(todos);
+    output.push(todos);
   }
 });
 
@@ -283,14 +352,12 @@ FBP.component({
  * Replace a DOM element's innerHTML
  * @param {ip} content - The HTML to replace the content with
  * @param {ip} target - The target ID whose content we will replace
- * @param {port} contentOut - Outputting the content
- * @param {port} targetOut - Outputting the target
  */
 FBP.component({
   name: 'replace',
   inPorts: ['content', 'target'],
-  outPorts: ['contentOut', 'targetOut'],
-  body: function replace (content, target, contentOut, targetOut) {
+  // no outPorts! this is a sink node
+  body: function replace (content, target) {
     var c = content.data;
     var t = target.data;
 
@@ -309,34 +376,49 @@ FBP.component({
     targetEl.innerHTML = '';
     targetEl.appendChild(html);
 
-    // we pass along the things that came to us (the ips, not just the data!)
-    // in case someone down the line wants it
-    contentOut(content);
-    targetOut(target);
+    FBP.dropIP([content, target]);
+
+    return null;
   }
 })
+
+/**
+ * Create 2 IPs from 1 (manual splitting)
+ * @param {ip} data - The data
+ * @param {ip} output1 - The first output
+ * @param {ip} output2 - The second output
+ */
+FBP.component({
+  name: 'split',
+  inPorts: ['data'],
+  outPorts: ['output1', 'output2'],
+  body: function store (data, output1, output2) {
+
+    output1.push(FBP.createIP(data.data));
+    output2.push(FBP.createIP(data.data));
+
+    // drop original IP
+    FBP.dropIP(data);
+  }
+});
 
 /**
  * Save some data to localstorage
  * @param {ip} data - The data
  * @param {ip} key - The key to save the data under
- * @param {port} output - The output port callback
  */
 FBP.component({
   name: 'store',
   inPorts: ['data', 'key'],
-  outPorts: ['output'],
-  body: function store (data, key, output) {
-    var d = data.data;
-    var k = key.data;
+  // no outPorts! this is a sink node!
+  body: function store (data, key) {
 
-    // side effect! we mutate localStorage and pass along the things
-    window.localStorage.setItem(k, JSON.stringify(d));
+    // side effect! we mutate localStorage
+    window.localStorage.setItem(key.data, JSON.stringify(data.data));
 
-    // no need for the key anymore
-    FBP.dropIP(key);
+    FBP.dropIP([data, key]);
 
-    output(data);
+    return null;
   }
 });
 
@@ -359,7 +441,7 @@ FBP.component({
     FBP.dropIP(key);
 
     // pass along the new thing
-    output(FBP.createIP(data));
+    output.push(FBP.createIP(data));
   }
 });
 
@@ -374,6 +456,6 @@ FBP.component({
   outPorts: ['output'],
   body: function onlyDone (todos, output) {
     todos.data = todos.data.filter(t => t.status === 'done');
-    output(todos);
+    output.push(todos);
   }
 });

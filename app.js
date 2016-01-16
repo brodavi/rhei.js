@@ -56,7 +56,7 @@ FBP.network({
 });
 
 FBP.network({
-  name: 'allTodos',
+  name: 'request',
   processes: [
     {name: 'sendResponse', component: 'sendResponse'}
   ]
@@ -96,10 +96,12 @@ FBP.network({
   processes: [
     {name: 'sendResponse', component: 'sendResponse'},
     {name: 'del', component: 'del'},
-    {name: 'find', component: 'find'}
+    {name: 'find', component: 'find'},
+    {name: 'null', component: 'null'}
   ],
   connections: {
     'find.output': 'del.el',
+    'find.outputIdx': 'null.input',
     'del.output': 'sendResponse.data'
   }
 });
@@ -113,7 +115,7 @@ app.get('/search', function (req, res, next) {
     'search',
     {
       'filter.filterString': req.query.search,
-      'filter.coll': todos,
+      'filter.coll': [todos],
       'filter.key': 'task',
       'sendResponse.res': res
     }
@@ -128,22 +130,9 @@ app.get('/testError', function (req, res, next) {
   res.statusCode = 401;
 
   FBP.go(
-    'allTodos',
+    'request',
     {
       'sendResponse.data': 'this is an error',
-      'sendResponse.res': res
-    }
-  );
-});
-
-/*
- * Get an explanation
- */
-app.get('/explain', function (req, res, next) {
-  FBP.go(
-    'allTodos',
-    {
-      'sendResponse.data': 'this is an explanation for the 401 you just got',
       'sendResponse.res': res
     }
   );
@@ -154,9 +143,9 @@ app.get('/explain', function (req, res, next) {
  */
 app.get('/todos', function (req, res, next) {
   FBP.go(
-    'allTodos',
+    'request',
     {
-      'sendResponse.data': todos,
+      'sendResponse.data': [todos],
       'sendResponse.res': res
     }
   );
@@ -174,7 +163,7 @@ app.post('/todos', function (req, res, next) {
     {
       'createTodo.currentID': currentID,
       'createTodo.req': req,
-      'insert.coll': todos,
+      'insert.coll': [todos],
       'insert.idx': null,
       'sendResponse.res': res
     }
@@ -188,10 +177,10 @@ app.put('/todo/:id', function (req, res, next) {
   FBP.go(
     'updateTodo',
     {
-      'find.coll': todos,
+      'find.coll': [todos],
       'find.key': 'id',
       'find.value': parseInt(req.params.id, 10),
-      'insert.coll': todos,
+      'insert.coll': [todos],
       'update.req': req,
       'sendResponse.res': res
     }
@@ -202,9 +191,10 @@ app.delete('/todo/:id', function (req, res, next) {
   FBP.go(
     'deleteTodo',
     {
-      'findTodo.key': 'id',
-      'findTodo.value': parseInt(req.params.id, 10),
-      'deleteTodo.coll': todos,
+      'find.coll': [todos],
+      'find.key': 'id',
+      'find.value': parseInt(req.params.id, 10),
+      'del.coll': [todos],
       'sendResponse.res': res
     }
   );

@@ -6,23 +6,25 @@ FBP.debug(true);
 
 FBP.network({
   name: 'ajax',
+  delay: 200,
   processes: [
     {name: 'ajax', component: 'ajax'},
-    {name: 'ajaxErr', component: 'ajax'},
+    {name: 'split1', component: 'split'},
+    {name: 'split2', component: 'split'},
     {name: 'storeTodos', component: 'store'},
     {name: 'storeErr', component: 'store'},
     {name: 'buildToDoList', component: 'buildToDoList'},
-    {name: 'updateDOM', component: 'replace'},
-    {name: 'updateDOMErr', component: 'replace'}
+    {name: 'updateDOM', component: 'replace'}
   ],
   connections: {
-    'ajax.output': 'storeTodos.data',
-    'storeTodos.output': 'buildToDoList.todos',
+    'ajax.output': 'split1.data',
+    'split1.output1': 'storeTodos.data',
+    'split1.output2': 'buildToDoList.todos',
     'buildToDoList.output': 'updateDOM.content',
     // error branch
-    'ajax.outputErr': 'ajaxErr.url',
-    'ajaxErr.output': 'storeErr.data',
-    'storeErr.output': 'updateDOMErr.content'
+    'ajax.outputErr': 'split2.data',
+    'split2.output1': 'storeErr.data',
+    'split2.output2': 'updateDOM.content'
   }
 });
 
@@ -67,12 +69,8 @@ function testError () {
       'ajax.url': 'http://localhost:3030/testError',
       'ajax.method': 'GET',
       'ajax.data': null,
-      'ajaxErr.method': 'GET',
-      'ajaxErr.data': null,
-      'storeTodos.key': 'todos',
       'storeErr.key': 'errors',
-      'updateDOM.target': 'todos',
-      'updateDOMErr.target': 'testError'
+      'updateDOM.target': 'todos'
     }
   );
 }
