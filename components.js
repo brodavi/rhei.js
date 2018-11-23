@@ -2,6 +2,22 @@
 // Note they can have multiple return callbacks
 
 /**
+ * Send data to console.og
+ * @param {ip} in - The data
+ * @param {port} output - Pass along the data
+ */
+
+FBP.component({
+  name: 'log',
+  inPorts: ['input'],
+  outPorts: ['output'],
+  body: function find (input, output) {
+    console.log(input);
+    output(input);
+  }
+});
+
+/**
  * Insert an element into a collection
  * @param {ip} coll - The collection
  * @param {ip} el - The element
@@ -37,25 +53,30 @@ FBP.component({
  * @param {ip} value - The value
  * @param {port} output - Output the element
  * @param {port} outputIdx - Output the index
+ * @param {port} outputErr - Can't find the thing
  */
 
 FBP.component({
   name: 'find',
   inPorts: ['coll', 'key', 'value'],
-  outPorts: ['output', 'outputIdx'],
-  body: function find (coll, key, value, output, outputIdx) {
+  outPorts: ['output', 'outputIdx', 'outputErr'],
+  body: function find (coll, key, value, output, outputIdx, outputErr) {
     var el = coll.data.find(function (e) {
       return e[key.data] === value.data;
     });
 
-    var idx = coll.data.indexOf(el);
+    if (!el) {
+      outputErr(FBP.createIP('cannot find with key ' + key + ' value: ' + value));
+    } else {
+      var idx = coll.data.indexOf(el);
+
+      output(FBP.createIP(el));
+      outputIdx(FBP.createIP(idx));
+    }
 
     FBP.dropIP(coll);
     FBP.dropIP(key);
     FBP.dropIP(value);
-
-    output(FBP.createIP(el));
-    outputIdx(FBP.createIP(idx));
   }
 });
 
@@ -118,9 +139,10 @@ FBP.component({
   inPorts: ['coll', 'el'],
   outPorts: ['output'],
   body: function del (coll, el, output) {
-    coll.data.splice([coll.data.indexOf(el.data)], 1);
+    coll.data.splice(coll.data.indexOf(el.data), 1);
 
     FBP.dropIP(el);
+
     output(coll);
   }
 });
@@ -222,7 +244,7 @@ FBP.component({
     FBP.dropIP(method);
     FBP.dropIP(data);
 
-    if (data) {
+    if (d) {
       request.send(JSON.stringify(d));
     } else {
       request.send();
@@ -242,6 +264,13 @@ FBP.component({
   body: function buildToDoList (todos, output) {
     var list = document.createElement('div');
     list.classList.add('todolist');
+
+    /**
+     * This is all actually quite ugly. We've got some DOM stuff going on
+     * directly inside this component. That feels wrong. Also, the DOM mutation
+     * is referring to a FBP network directly (runDelete, runToggleStatus).
+     * That seems wrong too. We want to pass messages, send IPs.
+     */
 
     for (var x = 0; x < todos.data.length; x++) {
       var todo = todos.data[x];

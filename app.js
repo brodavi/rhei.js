@@ -202,9 +202,10 @@ app.delete('/todo/:id', function (req, res, next) {
   FBP.go(
     'deleteTodo',
     {
-      'findTodo.key': 'id',
-      'findTodo.value': parseInt(req.params.id, 10),
-      'deleteTodo.coll': todos,
+      'find.value': parseInt(req.params.id, 10),
+      'find.coll': todos,
+      'find.key': 'id',
+      'del.coll': todos,
       'sendResponse.res': res
     }
   );

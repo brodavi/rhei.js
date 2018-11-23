@@ -13,10 +13,12 @@ FBP.network({
     {name: 'storeErr', component: 'store'},
     {name: 'buildToDoList', component: 'buildToDoList'},
     {name: 'updateDOM', component: 'replace'},
-    {name: 'updateDOMErr', component: 'replace'}
+    {name: 'updateDOMErr', component: 'replace'},
+    {name: 'log', component: 'log'}
   ],
   connections: {
-    'ajax.output': 'storeTodos.data',
+    'ajax.output': 'log.input',
+    'log.output': 'storeTodos.data',
     'storeTodos.output': 'buildToDoList.todos',
     'buildToDoList.output': 'updateDOM.content',
     // error branch

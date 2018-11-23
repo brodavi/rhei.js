@@ -31,6 +31,7 @@ FBP.component = function (component) {
  * @param {string} cname - A component name
  */
 FBP._instantiateProcess = function (pname, cname) {
+  // TODO::::::::::::: check for duplicate process names and error
   var newInports, newOutports, component, process;
 
   component = FBP._components.find(c => c.name == cname);
@@ -131,7 +132,8 @@ FBP.network = function (network) {
 
     // find the second process
     var connectedProcess = network._processes.find(p=> p.processName === network.connections[key].split('.')[0]);
-    if (!connectedProcess) throw new Error('whoops cannot connect: ' + key + ' to missing: ' + network.connections[key]);
+    var cannotConnectPort = key + '.' + network.connections[key].split('.')[1];
+    if (!connectedProcess) throw new Error('whoops cannot connect: ' + cannotConnectPort + ' to missing: ' + network.connections[key]);
 
     // find the second process's port to connect to
     var connectedPort = connectedProcess.inPorts.find(p => p.name === network.connections[key].split('.')[1]);
@@ -211,6 +213,7 @@ FBP._makeOutput = function (currentProcess, connection) {
       // to some input. If we encounter an output not connected
       // to some input, we are stopping the network. Fix this.
       FBP._currentNetwork.running = false;
+      console.log('an output is not connected to an input.... stopping network');
     } else {
 
       if (FBP._debug) {
@@ -252,7 +255,7 @@ FBP.loop = function (network) {
  */
 FBP.go = function (networkName, init, debug) {
 
-  if (FBP._debug) console.log('running network: "' + networkName + '"');
+  if (FBP._debug) console.log('\n\nrunning network: "' + networkName + '"');
 
   var network = FBP._networks.find(n => n.name === networkName);
 
