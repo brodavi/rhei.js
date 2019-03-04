@@ -1,3 +1,3 @@
-exports.config = {
+module.exports = {
   port: 3030
-};
+}

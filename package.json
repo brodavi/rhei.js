@@ -4,13 +4,17 @@
   "description": "TODO app using fbp principles",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "serve": "node_modules/http-server/bin/http-server -c-1",
+    "build": "node_modules/browserify/bin/cmd.js client.js -o bundle.js",
+    "watch": "ls *.js | entr npm run build"
   },
   "author": "David Brooks",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.10.1",
-    "browserify": "^10.1.3",
-    "express": "^4.11.0"
+    "browserify": "^16.2.3",
+    "choo": "^6.13.1",
+    "express": "^4.11.0",
+    "http-server": "^0.11.1"
   }
 }
